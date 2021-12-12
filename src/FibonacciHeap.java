@@ -10,6 +10,7 @@ public class FibonacciHeap {
     public int numOfTrees;
     public int numOfMarkedNodes;
     public int size;
+    public static int totalCuts = 0;
 
     public FibonacciHeap() {
         this.first = null;
@@ -91,7 +92,7 @@ public class FibonacciHeap {
      * <p>
      * Deletes the node containing the minimum key.
      */
-    public void deleteMin() {
+    public void deleteMin() { //// add successive linking/consolidation
         if (this.isEmpty()) {
             return;
         }
@@ -155,13 +156,21 @@ public class FibonacciHeap {
      * Melds heap2 with the current heap.
      */
     public void meld(FibonacciHeap heap2) {
+        if (heap2.isEmpty()) {
+            return;
+        }
         this.numOfTrees += heap2.numOfTrees;
         this.numOfMarkedNodes += heap2.numOfMarkedNodes;
         this.size+=heap2.size();
-        if (heap2.findMin().getKey() < this.findMin().getKey()) {
+        if (this.isEmpty() || heap2.findMin().getKey() < this.findMin().getKey()) {
             this.min = heap2.findMin();
         }
-        insertTreesAfterNode(heap2.getFirst(), this.getFirst().getPrev());
+        if (this.isEmpty()) {
+            this.first = heap2.getFirst();
+        }
+        else {
+            insertTreesAfterNode(heap2.getFirst(), this.getFirst().getPrev());
+        }
     }
 
     /**
@@ -221,6 +230,34 @@ public class FibonacciHeap {
         return; // should be replaced by student code
     }
 
+    public void cut(HeapNode x, HeapNode y) { // cut x from its parent y
+        this.setAsRoot(x);
+        y.rank--;
+        if (x.getNext().equals(x)) { // x is only son
+            y.child = null;
+        }
+        else {
+            if (y.getFirstChild().equals(x)) {
+                y.child = x.getNext();
+            }
+            x.getPrev().next = x.getNext();
+            x.getNext().prev = x.getPrev();
+        }
+        totalCuts++;
+    }
+
+    public void cascadingCuts(HeapNode x, HeapNode y) { // cut x from its parent y
+        cut(x, y);
+        if (!y.getParent().equals(null)) {
+            if (!y.isMarked()) {
+                this.mark(y);
+            }
+            else {
+                cascadingCuts(y, y.getParent());
+            }
+        }
+    }
+
     /**
      * public int potential()
      * <p>
@@ -231,7 +268,7 @@ public class FibonacciHeap {
      * plus twice the number of marked nodes in the heap.
      */
     public int potential() {
-        return -234; // should be replaced by student code
+        return numOfTrees + 2*numOfMarkedNodes; // should be replaced by student code
     }
 
     /**
