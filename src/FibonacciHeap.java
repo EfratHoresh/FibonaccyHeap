@@ -11,6 +11,7 @@ public class FibonacciHeap {
     public int numOfMarkedNodes;
     public int size;
     public static int totalCuts = 0;
+    public static int totalLinks = 0;
 
     public FibonacciHeap() {
         this.first = null;
@@ -92,7 +93,7 @@ public class FibonacciHeap {
      * <p>
      * Deletes the node containing the minimum key.
      */
-    public void deleteMin() { //// add successive linking/consolidation
+    public void deleteMin() {
         if (this.isEmpty()) {
             return;
         }
@@ -155,6 +156,7 @@ public class FibonacciHeap {
         if (child.equals(this.getFirst())) {
             this.first = root;
         }
+        totalLinks++;
         return root;
     }
 
@@ -286,6 +288,10 @@ public class FibonacciHeap {
      * It is assumed that x indeed belongs to the heap.
      */
     public void delete(HeapNode x) {
+        int oldMin = this.findMin().getKey();
+        int delta = x.getKey()-oldMin+1;
+        this.decreaseKey(x, delta);
+        this.deleteMin();
         return; // should be replaced by student code
     }
 
@@ -296,7 +302,18 @@ public class FibonacciHeap {
      * to reflect this change (for example, the cascading cuts procedure should be applied if needed).
      */
     public void decreaseKey(HeapNode x, int delta) {
-        return; // should be replaced by student code
+        if (x.equals(null)) {
+            return;
+        }
+        int newKey = x.getKey()-delta;
+        x.key = newKey;
+        if (newKey < this.findMin().getKey()) { //update min
+            this.min = x;
+        }
+        if (x.isRoot() || newKey > x.getParent().getKey()) { // no need for cascading cuts
+            return;
+        }
+        cascadingCuts(x, x.getParent());
     }
 
     public void cut(HeapNode x, HeapNode y) { // cut x from its parent y
@@ -312,7 +329,10 @@ public class FibonacciHeap {
             x.getPrev().next = x.getNext();
             x.getNext().prev = x.getPrev();
         }
+        this.getFirst().getPrev().insertNext(x);
+        this.first = x;
         totalCuts++;
+        numOfTrees++;
     }
 
     public void cascadingCuts(HeapNode x, HeapNode y) { // cut x from its parent y
@@ -349,7 +369,7 @@ public class FibonacciHeap {
      * tree which has larger value in its root under the other tree.
      */
     public static int totalLinks() {
-        return 0; // should be replaced by student code
+        return totalLinks; // should be replaced by student code
     }
 
     /**
@@ -372,8 +392,34 @@ public class FibonacciHeap {
      * ###CRITICAL### : you are NOT allowed to change H.
      */
     public static int[] kMin(FibonacciHeap H, int k) {
-        int[] arr = new int[100];
-        return arr; // should be replaced by student code
+        int[] arr = new int[k];
+        if (k==0) {
+            return arr;
+        }
+        FibonacciHeap candidates = new FibonacciHeap();
+        HeapNode lastInserted = H.findMin();  // insert min to arr
+        arr[0] = lastInserted.getKey();
+        for (int i=1 ; i<k ; i++) {  // fill all k keys in arr
+            HeapNode son;
+            if (lastInserted.equals(H.findMin())) {  // first iteration - inserting sons of min
+                 son = lastInserted.getFirstChild();
+            }
+            else { // other iterations
+                son = lastInserted.getOriginalChild();
+            }
+            if (!son.equals(null)) { // if added node has sons, add them as candidates
+                do {
+                    HeapNode addCandidate = candidates.insert(son.getKey());
+                    addCandidate.originalChild = son.getFirstChild();  // save child from H so we can add children as candidates later
+                    son = son.getNext();
+                }
+                while (!son.equals(lastInserted.getFirstChild()));  // finished going over all sons
+            }
+            lastInserted = candidates.findMin();  // update lastInserted
+            candidates.deleteMin();  // remove minimal key from candidates heap
+            arr[i] = lastInserted.getKey();
+        }
+        return arr;
     }
 
     /**
@@ -391,6 +437,7 @@ public class FibonacciHeap {
         public HeapNode next;
         public HeapNode prev;
         public HeapNode parent;
+        private HeapNode originalChild;  // for func kMin
 
 
         public HeapNode(int key) {
@@ -401,6 +448,7 @@ public class FibonacciHeap {
             this.next = this;
             this.prev = this;
             this.parent = null;
+            this.originalChild = null;
         }
 
 
@@ -434,6 +482,10 @@ public class FibonacciHeap {
 
         public boolean isRoot() {
             return this.getParent()==null;
+        }
+
+        private HeapNode getOriginalChild() { // for func kMin
+            return this.originalChild;
         }
 
         public void insertNext(HeapNode addedNode) {
