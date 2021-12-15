@@ -108,27 +108,40 @@ public class FibonacciHeap {
         else {
             prevMin.next = nextMin;
             nextMin.prev = prevMin;
+            if (oldMin.equals(this.getFirst())) {
+                if (son!=null) {
+                    this.first = son;
+                }
+                else {
+                    this.first = nextMin;
+                }
+            }
         }
-        if (oldMin.equals(this.getFirst())) { // if min is first root in heap
-            this.first = son;
-        }
-        if (son!=null) { // min is has children
+        if (son!=null) { // min  has children
             do { // unmark min sons & make their parent null
                 this.setAsRoot(son);
                 son = son.next;
             }
             while (!son.equals(oldMin.getFirstChild())); // go over min sons
-            insertTreesAfterNode(son, prevMin); // add sons as roots to heap
+            if (!oldMin.equals(nextMin)) {
+                insertTreesAfterNode(son, prevMin); // add sons as roots to heap
+            }
         }
         numOfTrees+=minRank-1;
         this.successiveLinking();
-        int newMinValue = this.getFirst().getKey(); //find new min
-        this.min = this.getFirst();
-        HeapNode searchMin = this.getFirst().getNext();
-        while (!searchMin.equals(this.getFirst())) {
-            if (searchMin.getKey() < newMinValue) {
-                newMinValue = searchMin.getKey();
-                this.min = searchMin;
+        if (this.isEmpty()) {
+            this.min = null;
+        }
+        else {
+            int newMinValue = this.getFirst().getKey(); //find new min
+            this.min = this.getFirst();
+            HeapNode searchMin = this.getFirst().getNext();
+            while (!searchMin.equals(this.getFirst())) {
+                if (searchMin.getKey() < newMinValue) {
+                    newMinValue = searchMin.getKey();
+                    this.min = searchMin;
+                }
+                searchMin = searchMin.getNext();
             }
         }
         size--;
@@ -137,12 +150,12 @@ public class FibonacciHeap {
     public HeapNode link(HeapNode x, HeapNode y) {
         HeapNode root = x;
         HeapNode child = y;
-        HeapNode oldSon = root.getFirstChild();
         if (x.getKey() > y.getKey()) {
             root = y;
             child = x;
         }
-        if (oldSon.equals(null)) {
+        HeapNode oldSon = root.getFirstChild();
+        if (oldSon==null) {
             child.next = child;
             child.prev = child;
         }
@@ -160,35 +173,51 @@ public class FibonacciHeap {
         return root;
     }
 
-    public void toBuckets(HeapNode[] buckets) { //
+    public void successiveLinking() {
+        HeapNode[] buckets = this.toBuckets();
+        this.fromBuckets(buckets);
+    }
+
+    public HeapNode[] toBuckets() { //
+        int bucketsLength = (int)Math.floor(Math.log(this.size())/Math.log(1.5)) + 1;
+        HeapNode[] buckets = new HeapNode[bucketsLength];
+        HeapNode fakeNode = new HeapNode(this.findMin().getKey()-1);
+        for (int i=0; i<bucketsLength; i++) {
+            buckets[i] = fakeNode;
+        }
         if (this.isEmpty()) {
-            return;
+            return buckets;
         }
         HeapNode x = this.getFirst();
         x.getPrev().next = null;
-        while (!x.equals(null)) {
+        while (x!=null) {
             HeapNode y = x;
             x = x.getNext();
-            while (!buckets[y.getRank()].equals(null)) {
+            while (!buckets[y.getRank()].equals(fakeNode)) {
                 y = link(y, buckets[y.getRank()]);
-                buckets[y.getRank()-1] = null;
+                buckets[y.getRank()-1] = fakeNode;
             }
             buckets[y.getRank()] = y;
         }
+        return buckets;
     }
 
-    public void successiveLinking() {
-        int bucketsLength = (int)Math.floor(Math.log(this.size())/Math.log(1.5)) + 1;
-        HeapNode[] buckets = new HeapNode[bucketsLength];
-        this.toBuckets(buckets);
-        this.fromBuckets(buckets);
+    public boolean isFakeNode(HeapNode node) {
+        return node.getKey()==this.findMin().getKey()-1;
     }
+
+//    public void successiveLinking() {
+//        int bucketsLength = (int)Math.floor(Math.log(this.size())/Math.log(1.5)) + 1;
+//        HeapNode[] buckets = new HeapNode[bucketsLength];
+//        this.toBuckets(buckets);
+//        this.fromBuckets(buckets);
+//    }
 
     public void fromBuckets(HeapNode[] buckets) {
         HeapNode x = null;
         for (HeapNode bucket : buckets) {
-            if (!bucket.equals(null)) {
-                if (x.equals(null)) { // connecting first root
+            if (!this.isFakeNode(bucket)) {
+                if (x==null) { // connecting first root - first iteration
                     x = bucket;
                     x.next = x;
                     x.prev = x;
@@ -337,7 +366,7 @@ public class FibonacciHeap {
 
     public void cascadingCuts(HeapNode x, HeapNode y) { // cut x from its parent y
         cut(x, y);
-        if (!y.getParent().equals(null)) {
+        if (y.getParent()!=null) {
             if (!y.isMarked()) {
                 this.mark(y);
             }
@@ -407,7 +436,7 @@ public class FibonacciHeap {
             else { // other iterations
                 son = lastInserted.getOriginalChild();
             }
-            if (!son.equals(null)) { // if added node has sons, add them as candidates
+            if (son!=null) { // if added node has sons, add them as candidates
                 do {
                     HeapNode addCandidate = candidates.insert(son.getKey());
                     addCandidate.originalChild = son.getFirstChild();  // save child from H so we can add children as candidates later
