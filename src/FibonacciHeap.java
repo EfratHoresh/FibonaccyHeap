@@ -105,24 +105,24 @@ public class FibonacciHeap {
         if (oldMin.equals(nextMin)) { //min is only root in heap
             this.first = son;
         }
-        else {
+        else { // more than one tree in heap
             prevMin.next = nextMin;
             nextMin.prev = prevMin;
-            if (oldMin.equals(this.getFirst())) {
-                if (son!=null) {
+            if (oldMin.equals(this.getFirst())) { // min was first
+                if (son!=null) {  // min has children -> child is first in heap
                     this.first = son;
                 }
-                else {
+                else { // min has no children -> next root is first in heap
                     this.first = nextMin;
                 }
             }
         }
-        if (son!=null) { // min  has children
-            do { // unmark min sons & make their parent null
+        if (son!=null) { // if min  has children -> unmark, parent=null & add them as roots in heap
+            do { // unmark & parent=null
                 this.setAsRoot(son);
                 son = son.next;
             }
-            while (!son.equals(oldMin.getFirstChild())); // go over min sons
+            while (!son.equals(oldMin.getFirstChild())); // go over min's sons
             if (!oldMin.equals(nextMin)) {
                 insertTreesAfterNode(son, prevMin); // add sons as roots to heap
             }
@@ -301,7 +301,7 @@ public class FibonacciHeap {
             rootNode = rootNode.getNext();
         }
         while (!rootNode.equals(this.getFirst()));
-        int[] arr = new int[maxRankInHeap];
+        int[] arr = new int[maxRankInHeap+1];
         do { // iterate through all roots and update array
             arr[rootNode.getRank()]++;
             rootNode = rootNode.getNext();
@@ -429,20 +429,20 @@ public class FibonacciHeap {
         HeapNode lastInserted = H.findMin();  // insert min to arr
         arr[0] = lastInserted.getKey();
         for (int i=1 ; i<k ; i++) {  // fill all k keys in arr
-            HeapNode son;
+            HeapNode child;
             if (lastInserted.equals(H.findMin())) {  // first iteration - inserting sons of min
-                 son = lastInserted.getFirstChild();
+                 child = lastInserted.getFirstChild();
             }
             else { // other iterations
-                son = lastInserted.getOriginalChild();
+                child = lastInserted.getOriginalChild();
             }
-            if (son!=null) { // if added node has sons, add them as candidates
+            if (child!=null) { // if added node has sons, add them as candidates
                 do {
-                    HeapNode addCandidate = candidates.insert(son.getKey());
-                    addCandidate.originalChild = son.getFirstChild();  // save child from H so we can add children as candidates later
-                    son = son.getNext();
-                }
-                while (!son.equals(lastInserted.getFirstChild()));  // finished going over all sons
+                    HeapNode addCandidate = candidates.insert(child.getKey());
+                    addCandidate.originalChild = child.getFirstChild();  // save child from H so we can add children as candidates later
+                    child = child.getNext();
+                }  // finished going over all sons: first iteration - got back to firstChild, other iterations - got back to original child
+                while (!child.equals(lastInserted.getOriginalChild()) && !child.equals(lastInserted.getFirstChild()));
             }
             lastInserted = candidates.findMin();  // update lastInserted
             candidates.deleteMin();  // remove minimal key from candidates heap
