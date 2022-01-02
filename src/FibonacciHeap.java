@@ -3,6 +3,17 @@
  *
  * An implementation of a Fibonacci Heap over integers.
  */
+
+/**
+ * Name: Inbal Pearl
+ * UserName: inbalpearl
+ *ID: 318657871
+ *
+ * Name: Efrat Horesh
+ * UserName: efratporten
+ * ID: 318348992
+ */
+
 public class FibonacciHeap {
 
     public HeapNode first;
@@ -73,19 +84,18 @@ public class FibonacciHeap {
     public HeapNode insert(int key) {
         HeapNode addedNode = new HeapNode(key);
         if (this.isEmpty()) {
-            this.first = addedNode;
             this.min = addedNode;
         }
-        else {
-            if (this.findMin().getKey()>key) {
+        else { // not empty
+            if (this.findMin().getKey()>key) { // update min
                 this.min = addedNode;
             }
             this.getFirst().insertPrev(addedNode);
-            this.first = addedNode;
         }
+        this.first = addedNode;
         numOfTrees++;
         size++;
-        return addedNode; // should be replaced by student code
+        return addedNode;
     }
 
     /**
@@ -150,7 +160,7 @@ public class FibonacciHeap {
     public HeapNode link(HeapNode x, HeapNode y) {
         HeapNode root = x;
         HeapNode child = y;
-        if (x.getKey() > y.getKey()) {
+        if (x.getKey() > y.getKey()) { //choose root as min
             root = y;
             child = x;
         }
@@ -159,14 +169,14 @@ public class FibonacciHeap {
             child.next = child;
             child.prev = child;
         }
-        else {
+        else { // has son
             oldSon.prev.insertNext(child);
         }
         root.rank++;
         root.child = child;
         child.parent = root;
         numOfTrees--;
-        if (child.equals(this.getFirst())) {
+        if (child.equals(this.getFirst())) { //child was first in heap
             this.first = root;
         }
         totalLinks++;
@@ -178,11 +188,11 @@ public class FibonacciHeap {
         this.fromBuckets(buckets);
     }
 
-    public HeapNode[] toBuckets() { //
+    public HeapNode[] toBuckets() {
         int bucketsLength = (int)Math.floor(Math.log(this.size())/Math.log(1.5)) + 1;
         HeapNode[] buckets = new HeapNode[bucketsLength];
         HeapNode fakeNode = new HeapNode(this.findMin().getKey()-1);
-        for (int i=0; i<bucketsLength; i++) {
+        for (int i=0; i<bucketsLength; i++) { // insert fake nodes
             buckets[i] = fakeNode;
         }
         if (this.isEmpty()) {
@@ -190,10 +200,10 @@ public class FibonacciHeap {
         }
         HeapNode x = this.getFirst();
         x.getPrev().next = null;
-        while (x!=null) {
+        while (x!=null) { // fill the buckets with all roots in heap
             HeapNode y = x;
             x = x.getNext();
-            while (!buckets[y.getRank()].equals(fakeNode)) {
+            while (!buckets[y.getRank()].equals(fakeNode)) { // bucket is already full
                 y = link(y, buckets[y.getRank()]);
                 buckets[y.getRank()-1] = fakeNode;
             }
@@ -202,16 +212,10 @@ public class FibonacciHeap {
         return buckets;
     }
 
-    public boolean isFakeNode(HeapNode node) {
+    public boolean isFakeNode(HeapNode node) { // for buckets
         return node.getKey()==this.findMin().getKey()-1;
     }
 
-//    public void successiveLinking() {
-//        int bucketsLength = (int)Math.floor(Math.log(this.size())/Math.log(1.5)) + 1;
-//        HeapNode[] buckets = new HeapNode[bucketsLength];
-//        this.toBuckets(buckets);
-//        this.fromBuckets(buckets);
-//    }
 
     public void fromBuckets(HeapNode[] buckets) {
         HeapNode x = null;
@@ -223,7 +227,7 @@ public class FibonacciHeap {
                     x.prev = x;
                     this.first = x;
                 }
-                else {
+                else { // not first root in buckets
                     x.insertNext(bucket);
                     x = bucket; // == x = x.next
                 }
@@ -247,7 +251,7 @@ public class FibonacciHeap {
      * Returns the node of the heap whose key is minimal, or null if the heap is empty.
      */
     public HeapNode findMin() {
-        return this.min;// should be replaced by student code
+        return this.min;
     }
 
     /**
@@ -262,7 +266,7 @@ public class FibonacciHeap {
         this.numOfTrees += heap2.numOfTrees;
         this.numOfMarkedNodes += heap2.numOfMarkedNodes;
         this.size+=heap2.size();
-        if (this.isEmpty() || heap2.findMin().getKey() < this.findMin().getKey()) {
+        if (this.isEmpty() || heap2.findMin().getKey() < this.findMin().getKey()) { // update min
             this.min = heap2.findMin();
         }
         if (this.isEmpty()) {
@@ -307,7 +311,7 @@ public class FibonacciHeap {
             rootNode = rootNode.getNext();
         }
         while (!rootNode.equals(this.getFirst()));
-        return arr; //	 to be replaced by student code
+        return arr;
     }
 
     /**
@@ -321,7 +325,7 @@ public class FibonacciHeap {
         int delta = x.getKey()-oldMin+1;
         this.decreaseKey(x, delta);
         this.deleteMin();
-        return; // should be replaced by student code
+        return;
     }
 
     /**
@@ -352,7 +356,7 @@ public class FibonacciHeap {
             y.child = null;
         }
         else {
-            if (y.getFirstChild().equals(x)) {
+            if (y.getFirstChild().equals(x)) { // x was first son
                 y.child = x.getNext();
             }
             x.getPrev().next = x.getNext();
@@ -366,7 +370,7 @@ public class FibonacciHeap {
 
     public void cascadingCuts(HeapNode x, HeapNode y) { // cut x from its parent y
         cut(x, y);
-        if (y.getParent()!=null) {
+        if (y.getParent()!=null) { // y is not root
             if (!y.isMarked()) {
                 this.mark(y);
             }
@@ -386,7 +390,7 @@ public class FibonacciHeap {
      * plus twice the number of marked nodes in the heap.
      */
     public int potential() {
-        return numOfTrees + 2*numOfMarkedNodes; // should be replaced by student code
+        return getNumOfTrees() + 2*getNumOfMarkedNodes(); // should be replaced by student code
     }
 
     /**
@@ -398,7 +402,7 @@ public class FibonacciHeap {
      * tree which has larger value in its root under the other tree.
      */
     public static int totalLinks() {
-        return totalLinks; // should be replaced by student code
+        return totalLinks;
     }
 
     /**
@@ -409,7 +413,7 @@ public class FibonacciHeap {
      * from its parent (during decreaseKey/delete methods).
      */
     public static int totalCuts() {
-        return totalCuts; // should be replaced by student code
+        return totalCuts;
     }
 
     /**
